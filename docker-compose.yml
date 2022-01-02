@@ -1,0 +1,120 @@
+version: '2.2'
+services:
+  hr-worker-pg12:
+    image: postgres:12-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: "1234567"
+      POSTGRES_DB: "db_hr_worker"
+    ports: 
+      - "5432:5432"
+    networks: 
+      - hr-net
+  hr-user-pg12:
+    image: postgres:12-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: "1234567"
+      POSTGRES_DB: "db_hr_user"
+    ports: 
+      - "5433:5432"
+    networks: 
+      - hr-net
+  hr-config-server:
+    image: hr-config-server
+    restart: always
+    build:
+      context: ./hr-config-server
+      dockerfile: ./Dockerfile
+    environment:
+      TZ: America/Sao_Paulo
+    ports: 
+      - "8888:8888"
+    command: mvn spring-boot:run
+    networks:
+      - hr-net
+  hr-eureka-server:
+    image: hr-eureka-server
+    restart: always
+    build:
+      context: ./hr-eureka-server
+      dockerfile: ./Dockerfile
+    environment:
+      TZ: America/Sao_Paulo
+    ports: 
+      - "8761:8761"
+    command: mvn spring-boot:run
+    networks:
+      - hr-net
+  api-gateway-zuul:
+    image: api-gateway-zuul
+    restart: always
+    build:
+      context: ./hr-gateway-zuul
+      dockerfile: ./Dockerfile
+    environment:
+      TZ: America/Sao_Paulo
+    ports: 
+      - "8765:8765"
+    command: mvn spring-boot:run
+    networks:
+      - hr-net
+  hr-worker:
+    image: hr-worker
+    restart: always
+    build:
+      context: ./hr-worker
+      dockerfile: ./Dockerfile
+    environment:
+      TZ: America/Sao_Paulo
+    ports: 
+      - "8080"
+    command: mvn spring-boot:run
+    depends_on:
+      - hr-worker-pg12
+    networks:
+      - hr-net
+  hr-user:
+    image: hr-user
+    restart: always
+    build:
+      context: ./hr-user
+      dockerfile: ./Dockerfile
+    environment:
+      TZ: America/Sao_Paulo
+    ports: 
+      - "8080"
+    command: mvn spring-boot:run
+    depends_on:
+      - hr-user-pg12
+    networks:
+      - hr-net
+  hr-oauth:
+    image: hr-oauth
+    restart: always
+    build:
+      context: ./hr-oauth
+      dockerfile: ./Dockerfile
+    environment:
+      TZ: America/Sao_Paulo
+    ports: 
+      - "8080"
+    command: mvn spring-boot:run
+    networks:
+      - hr-net
+  hr-payroll:
+    image: hr-payroll
+    restart: always
+    build:
+      context: ./hr-payroll
+      dockerfile: ./Dockerfile
+    environment:
+      TZ: America/Sao_Paulo
+    ports: 
+      - "8080"
+    command: mvn spring-boot:run
+    networks:
+      - hr-net
+networks:
+  hr-net:
+    driver: bridge
